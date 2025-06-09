@@ -409,7 +409,7 @@ class ASC(COMMON):
         send_to_mod_queue = meta.get('modq', False) or meta.get('mq', False)
         if send_to_mod_queue:
             return False, "A flag --modq ou --mq foi usada, enviando para a fila de moderação."
-        
+
         return True, "Critérios de aprovação automática atendidos."
 
     async def upload(self, meta, disctype):
