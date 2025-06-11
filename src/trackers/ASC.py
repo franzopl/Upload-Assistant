@@ -2,7 +2,6 @@
 import os
 import requests
 import cli_ui
-import json # Garanta que esta linha esteja no topo do seu arquivo ASC.py
 from src.exceptions import UploadException
 from bs4 import BeautifulSoup
 from src.console import console
@@ -236,13 +235,13 @@ class ASC(COMMON):
         try:
             cookie_file = os.path.abspath(f"{meta['base_dir']}/data/cookies/ASC.txt")
             if os.path.exists(cookie_file):
-                 self.session.cookies.update(await self.parseCookieFile(cookie_file))
+                self.session.cookies.update(await self.parseCookieFile(cookie_file))
 
             response = self.session.post(url_gerador_desc, data=payload, timeout=20)
             response.raise_for_status()
-            
+
             json_data = response.json()
-            
+
             # Chama uma função auxiliar para construir o BBCode a partir do JSON
             auto_description = self._build_description_from_json(json_data)
 
@@ -270,7 +269,6 @@ class ASC(COMMON):
         lancamento = asc_data.get('Year', '')
         duracao = asc_data.get('Runtime', '')
         imdb_rating = asc_data.get('imdbRating', 'N/A')
-        diretor = asc_data.get('Director', '')
 
         elenco_lista = [ator.get('name') for ator in asc_data.get('cast', [])[:10]]
         elenco_str = ', '.join(elenco_lista)
@@ -315,9 +313,9 @@ class ASC(COMMON):
                     media_info_text = MediaInfo.parse(meta['filelist'][0], output="STRING", full=False, mediainfo_options={"inform": f"file://{mi_path}"})
                 except Exception as e:
                     console.print(f"[bold red]Ocorreu um erro ao processar o template do MediaInfo: {e}[/bold red]")
-            
+
             if not media_info_text and os.path.exists(mi_clean_path):
-                 with open(mi_clean_path, 'r', encoding='utf-8') as f:
+                with open(mi_clean_path, 'r', encoding='utf-8') as f:
                     media_info_text = f.read()
 
             if media_info_text:
