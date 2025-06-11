@@ -117,7 +117,52 @@ class ASC(COMMON):
 
             data['tresd'] = 2
             data['layout'] = 2
-            data['legenda'] = '1'
+
+            subtitle_languages = []
+
+            if meta.get('is_disc') == 'BDMV':
+                try:
+                    bdinfo_subs = meta.get('bdinfo', {}).get('subtitles', [])
+                    if bdinfo_subs and isinstance(bdinfo_subs, list):
+                        if isinstance(bdinfo_subs[0], str):
+                            for lang_string in bdinfo_subs:
+                                subtitle_languages.append(lang_string.lower())
+                        elif isinstance(bdinfo_subs[0], dict):
+                            for lang_dict in bdinfo_subs:
+                                subtitle_languages.append(lang_dict.get('language', '').lower())
+
+                except Exception:
+                    console.print("[bold yellow]Aviso: Falha ao ler dados de legenda do BDInfo.[/bold yellow]")
+            else:
+                try:
+                    media_tracks = meta.get('mediainfo', {}).get('media', {}).get('track', [])
+                    text_tracks = [t for t in media_tracks if t.get('@type') == 'Text']
+                    for track in text_tracks:
+                        subtitle_languages.append(track.get('Language', '').lower())
+                except (AttributeError, TypeError):
+                    console.print("[bold yellow]Aviso: Falha ao ler dados de legenda do MediaInfo.[/bold yellow]")
+
+            has_embedded_portuguese_subs = False
+            pt_variants = ["pt", "portuguese", "português", "pt-br"]
+            for lang in subtitle_languages:
+                if any(variant in lang for variant in pt_variants):
+                    has_embedded_portuguese_subs = True
+                    break
+
+            if has_embedded_portuguese_subs:
+                data['legenda'] = '1'
+            else:
+                console.print("[cyan]Nenhuma legenda embutida em Português foi detectada.[/cyan]")
+                has_separate_subs = cli_ui.ask_yes_no(
+                    "Este upload inclui um arquivo de legenda SEPARADO (.srt, .sub) em Português?",
+                    default=False
+                )
+                if has_separate_subs:
+                    data['legenda'] = '2'
+                    console.print("[green]Opção 'Legenda Separada' selecionada pelo usuário.[/green]")
+                else:
+                    data['legenda'] = '0'
+                    console.print("[green]Opção 'Sem Legenda' selecionada.[/green]")
 
             # Resolução
             video_track = next((t for t in meta.get('mediainfo', {}).get('media', {}).get('track', []) if t.get('@type') == 'Video'), None)
