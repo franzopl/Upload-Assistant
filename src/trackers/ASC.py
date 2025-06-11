@@ -108,7 +108,8 @@ class ASC(COMMON):
             console.print("[bold yellow]Aviso: Não foi encontrado o tipo de disco.[/bold yellow]")
             if cli_ui.ask_yes_no("Deseja definir o tipo de disco pelo tamanho do arquivo?", default=True):
                 size = meta.get('torrent_comments', [{}])[0].get('size', 0)
-                if size > 66_000_000_000: return "43"  # BD100
+                if size > 66_000_000_000:
+                    return "43"  # BD100
                 elif size > 50_000_000_000:
                     return "42"  # BD66
                 elif size > 25_000_000_000:
@@ -134,7 +135,8 @@ class ASC(COMMON):
         is_original_pt = any(v in meta.get('original_language', '').lower() for v in pt_variants)
 
         if has_pt:
-            if is_original_pt: return "4"  # Nacional
+            if is_original_pt:
+                return "4"  # Nacional
             elif other_langs_count > 0:
                 return "2"  # Dual-Audio
             return "3"  # Dublado
@@ -189,9 +191,9 @@ class ASC(COMMON):
 
     def _get_video_codec(self, meta):
         codec_video_map = {
-            "MPEG-4": "31", "AV1": "29", "AVC": "30", "DivX": "9", 
-            "H264": "17", "H265": "18", "HEVC": "27", "M4V": "20", 
-            "MPEG-1": "10", "MPEG-2": "11", "RMVB": "12", "VC-1": "21", 
+            "MPEG-4": "31", "AV1": "29", "AVC": "30", "DivX": "9",
+            "H264": "17", "H265": "18", "HEVC": "27", "M4V": "20",
+            "MPEG-1": "10", "MPEG-2": "11", "RMVB": "12", "VC-1": "21",
             "VP6": "22", "VP9": "23", "WMV": "13", "XviD": "15"
         }
 
@@ -209,8 +211,6 @@ class ASC(COMMON):
             codec_video = meta.get('video_codec')
 
         codec_id = codec_video_map.get(codec_video, "16")
-
-        video_track = next((t for t in meta.get('mediainfo', {}).get('media', {}).get('track', []) if t.get('@type') == 'Video'), None)
 
         is_hdr = bool(meta.get('hdr'))
 
@@ -265,15 +265,22 @@ class ASC(COMMON):
             data['codecaudio'] = self._get_audio_codec(meta)
             data['codecvideo'] = self._get_video_codec(meta)
 
-            if meta.get('imdb_id'): data['imdb'] = f"tt{str(meta.get('imdb_id')).zfill(7)}"
-            if meta.get('genres'): data['genre'] = meta.get('genres')
-            if meta.get('year'): data['ano'] = meta.get('year')
-            if meta.get('poster'): data['capa'] = meta.get('poster')
-            if meta.get('youtube'): data['tube'] = meta.get('youtube')
+            if meta.get('imdb_id'):
+                data['imdb'] = f"tt{str(meta.get('imdb_id')).zfill(7)}"
+            if meta.get('genres'):
+                data['genre'] = meta.get('genres')
+            if meta.get('year'):
+                data['ano'] = meta.get('year')
+            if meta.get('poster'):
+                data['capa'] = meta.get('poster')
+            if meta.get('youtube'):
+                data['tube'] = meta.get('youtube')
 
             largura, altura = self._get_resolution(meta)
-            if largura: data['largura'] = largura
-            if altura: data['altura'] = altura
+            if largura:
+                data['largura'] = largura
+            if altura:
+                data['altura'] = altura
 
             lang_map = {"en": "1", "fr": "2", "de": "3", "it": "4", "ja": "5", "es": "6", "ru": "7", "pt": "8", "zh": "10", "da": "12", "sv": "13", "fi": "14", "bg": "15", "no": "16", "nl": "17", "pl": "19", "ko": "20", "th": "21", "hi": "23", "tr": "25"}
             data['lang'] = lang_map.get(meta.get('original_language', '').lower(), "11")
@@ -358,9 +365,9 @@ class ASC(COMMON):
             relative_url = details_link_tag['href']
             torrent_url = f"{self.base_url}/{relative_url}"
             announce_url = self.config['TRACKERS'][self.tracker].get('announce_url')
-            
+
             await COMMON(config=self.config).add_tracker_torrent(meta, self.tracker, self.source_flag, announce_url, torrent_url)
-            
+
             should_approve, reason = await self._should_auto_approve(meta)
             if should_approve:
                 await self._attempt_auto_approval(relative_url)
