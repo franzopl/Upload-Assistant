@@ -90,7 +90,7 @@ class ASC(COMMON):
         if meta.get('is_disc') == 'BDMV':
             res_map = {'2160p': ('3840', '2160'), '1080p': ('1920', '1080'), '1080i': ('1920', '1080'), '720p': ('1280', '720')}
             return res_map.get(meta.get('resolution'))
- 
+
         video_track = next((t for t in meta.get('mediainfo', {}).get('media', {}).get('track', []) if t.get('@type') == 'Video'), None)
         if video_track:
             return video_track.get('Width'), video_track.get('Height')
@@ -109,8 +109,10 @@ class ASC(COMMON):
             if cli_ui.ask_yes_no("Deseja definir o tipo de disco pelo tamanho do arquivo?", default=True):
                 size = meta.get('torrent_comments', [{}])[0].get('size', 0)
                 if size > 66_000_000_000: return "43"  # BD100
-                if size > 50_000_000_000: return "42"  # BD66
-                if size > 25_000_000_000: return "41"  # BD50
+                elif size > 50_000_000_000:
+                    return "42"  # BD66
+                elif size > 25_000_000_000:
+                    return "41"  # BD50
                 return "40"  # BD25
             else:
                 raise UploadException(f"Upload para o '{self.tracker}' cancelado pelo usuário.", 'yellow')
@@ -133,7 +135,8 @@ class ASC(COMMON):
 
         if has_pt:
             if is_original_pt: return "4"  # Nacional
-            if other_langs_count > 0: return "2"  # Dual-Audio
+            elif other_langs_count > 0:
+                return "2"  # Dual-Audio
             return "3"  # Dublado
         return "1"  # Legendado
 
@@ -144,28 +147,44 @@ class ASC(COMMON):
         try:
             general_track = next(t for t in meta.get('mediainfo', {}).get('media', {}).get('track', []) if t.get('@type') == 'General')
             file_extension = general_track.get('FileExtension', '').lower()
-            if file_extension == 'mkv': return '6'
-            if file_extension == 'mp4': return '8'
+            if file_extension == 'mkv':
+                return '6'
+            elif file_extension == 'mp4':
+                return '8'
         except (StopIteration, AttributeError, TypeError):
             return None
         return None
 
     def _get_audio_codec(self, meta):
         cn = meta.get('clean_name', '').upper()
-        if "ATMOS" in cn: return "43"
-        if "DTS:X" in cn: return "25"
-        if "DTS-HD MA" in cn: return "24"
-        if "DTS-HD" in cn: return "23"
-        if "TRUEHD" in cn: return "29"
-        if "DD+" in cn: return "26"
-        if "AC-3" in cn or ("DD" in cn and "+" not in cn): return "11"
-        if "DTS" in cn: return "12"
-        if "FLAC" in cn: return "13"
-        if "LPCM" in cn: return "21"
-        if "PCM" in cn: return "28"
-        if "AAC" in cn: return "10"
-        if "OPUS" in cn: return "27"
-        if "MPEG" in cn: return "17"
+        if "ATMOS" in cn:
+            return "43"
+        elif "DTS:X" in cn:
+            return "25"
+        elif "DTS-HD MA" in cn:
+            return "24"
+        elif "DTS-HD" in cn:
+            return "23"
+        elif "TRUEHD" in cn:
+            return "29"
+        elif "DD+" in cn:
+            return "26"
+        elif "AC-3" in cn or ("DD" in cn and "+" not in cn):
+            return "11"
+        elif "DTS" in cn:
+            return "12"
+        elif "FLAC" in cn:
+            return "13"
+        elif "LPCM" in cn:
+            return "21"
+        elif "PCM" in cn:
+            return "28"
+        elif "AAC" in cn:
+            return "10"
+        elif "OPUS" in cn:
+            return "27"
+        elif "MPEG" in cn:
+            return "17"
         return None
 
     def _get_video_codec(self, meta):
