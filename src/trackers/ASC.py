@@ -236,7 +236,7 @@ class ASC(COMMON):
                     console.print(f"[bold red]Ocorreu um erro ao processar o template do MediaInfo: {e}[/bold red]")
 
             if not media_info_text and os.path.exists(mi_clean_path):
-                 with open(mi_clean_path, 'r', encoding='utf-8') as f:
+                with open(mi_clean_path, 'r', encoding='utf-8') as f:
                     media_info_text = f.read()
 
             if media_info_text:
