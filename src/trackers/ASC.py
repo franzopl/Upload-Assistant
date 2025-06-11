@@ -2,6 +2,7 @@
 import os
 import requests
 import cli_ui
+import json # Garanta que esta linha esteja no topo do seu arquivo ASC.py
 from src.exceptions import UploadException
 from bs4 import BeautifulSoup
 from src.console import console
@@ -223,6 +224,86 @@ class ASC(COMMON):
         return codec_id
 
     async def _generate_description(self, meta):
+        if not meta.get('imdb_id'):
+            return await self._generate_description_manual(meta)
+
+        url_gerador_desc = f"{self.base_url}/search.php"
+        payload = {
+            'imdb': f"tt{str(meta.get('imdb_id')).zfill(7)}",
+            'layout': '2'
+        }
+
+        try:
+            cookie_file = os.path.abspath(f"{meta['base_dir']}/data/cookies/ASC.txt")
+            if os.path.exists(cookie_file):
+                 self.session.cookies.update(await self.parseCookieFile(cookie_file))
+
+            response = self.session.post(url_gerador_desc, data=payload, timeout=20)
+            response.raise_for_status()
+            
+            json_data = response.json()
+            
+            # Chama uma função auxiliar para construir o BBCode a partir do JSON
+            auto_description = self._build_description_from_json(json_data)
+
+            if not auto_description:
+                raise ValueError("Não foi possível construir a descrição automática.")
+
+            final_description = f"{auto_description}\n\n{self.signature}"
+            return final_description.strip()
+
+        except Exception as e:
+            console.print(f"[bold red]Ocorreu um erro no processo de descrição automática: {e}[/bold red]")
+            console.print("[yellow]Usando o método de descrição manual como fallback.[/yellow]")
+            return await self._generate_description_manual(meta)
+
+    def _build_description_from_json(self, json_data):
+        asc_data = json_data.get('ASC')
+        if not asc_data:
+            return None
+
+        barrinhas = {key: value for key, value in asc_data.items() if key.startswith('BARRINHA_')}
+        poster = asc_data.get('Poster', '')
+        sinopse = asc_data.get('overview', 'Sinopse não disponível.')
+        titulo_traduzido = asc_data.get('Title', '')
+        genero = asc_data.get('Genre', '')
+        lancamento = asc_data.get('Year', '')
+        duracao = asc_data.get('Runtime', '')
+        imdb_rating = asc_data.get('imdbRating', 'N/A')
+        diretor = asc_data.get('Director', '')
+
+        elenco_lista = [ator.get('name') for ator in asc_data.get('cast', [])[:10]]
+        elenco_str = ', '.join(elenco_lista)
+
+        description = "[center]\n"
+        if barrinhas.get('BARRINHA_CAPA') and poster:
+            description += f"[img]{barrinhas['BARRINHA_CAPA']}[/img]\n"
+            description += f"[img]{poster}[/img]\n\n"
+
+        if barrinhas.get('BARRINHA_SINOPSE') and sinopse:
+            description += f"[img]{barrinhas['BARRINHA_SINOPSE']}[/img]\n"
+            description += f"{sinopse}\n\n"
+
+        if barrinhas.get('BARRINHA_FICHA_TECNICA'):
+            description += f"[img]{barrinhas['BARRINHA_FICHA_TECNICA']}[/img]\n"
+            description += f"[b]» Título Traduzido:[/b] {titulo_traduzido}\n"
+            description += f"[b]» Gênero:[/b] {genero}\n"
+            description += f"[b]» Lançamento:[/b] {lancamento}\n"
+            description += f"[b]» Duração:[/b] {duracao}\n"
+            description += f"[b]» Nota IMDb:[/b] {imdb_rating}\n\n"
+
+        if barrinhas.get('BARRINHA_ELENCO') and elenco_str:
+            description += f"[img]{barrinhas['BARRINHA_ELENCO']}[/img]\n"
+            description += f"{elenco_str}\n\n"
+
+        if barrinhas.get('BARRINHA_AGRADECA'):
+            description += f"[img]{barrinhas['BARRINHA_AGRADECA']}[/img]\n"
+
+        description += "[/center]"
+
+        return description
+
+    async def _generate_description_manual(self, meta):
         description = ""
         mi_path = os.path.abspath(f"{meta['base_dir']}/data/templates/MEDIAINFO.txt")
         mi_clean_path = f"{meta['base_dir']}/tmp/{meta['uuid']}/MEDIAINFO_CLEANPATH.txt"
@@ -234,9 +315,9 @@ class ASC(COMMON):
                     media_info_text = MediaInfo.parse(meta['filelist'][0], output="STRING", full=False, mediainfo_options={"inform": f"file://{mi_path}"})
                 except Exception as e:
                     console.print(f"[bold red]Ocorreu um erro ao processar o template do MediaInfo: {e}[/bold red]")
-
+            
             if not media_info_text and os.path.exists(mi_clean_path):
-                with open(mi_clean_path, 'r', encoding='utf-8') as f:
+                 with open(mi_clean_path, 'r', encoding='utf-8') as f:
                     media_info_text = f.read()
 
             if media_info_text:
